@@ -21,7 +21,8 @@ void Game::startGame() {
     px = pz = heading = speed = reload = 0;
     score = 0;
     lives = 3;
-    wave = 0;
+    wave = startWave - 1;
+    practice = startWave > 1;
     waveDelay = 1.0f;
     banner = 0;
     enemies.clear();
@@ -108,6 +109,8 @@ void Game::update(const Input& in, float dt) {
     pressed.invert |= in.invert && !prev.invert;
     pressed.axis |= in.axis && !prev.axis;
     pressed.mute |= in.mute && !prev.mute;
+    pressed.left |= in.left && !prev.left;
+    pressed.right |= in.right && !prev.right;
     prev = in;
 
     acc += clampf(dt, 0.0f, 0.1f);
@@ -130,6 +133,8 @@ void Game::step(const Input& in) {
     switch (state) {
     case State::Title:
         if (pressed.pause) wantsQuit = true;
+        if (pressed.left && startWave > 1) --startWave;
+        if (pressed.right && startWave < MAX_START_WAVE) ++startWave;
         if (pressed.fire) {
             if (in.tiltAvailable) state = State::Calibrate, stateTime = 0;
             else startGame();
@@ -163,7 +168,7 @@ void Game::step(const Input& in) {
                 state = State::GameOver;
                 sounds |= SND_GAME_OVER;
                 stateTime = 0;
-                if (score > highScore) highScore = score, highScoreDirty = true;
+                if (!practice && score > highScore) highScore = score, highScoreDirty = true;
             } else {
                 // Push the survivors back so the player gets a fair restart.
                 std::vector<Enemy> old;

@@ -118,5 +118,23 @@ int main(int argc, char** argv) {
     g.lives = 0;
     run(g, none, 2.0f);
     save(g, dir, "10-gameover");
+
+    // Wave select: pick wave 6 on the title screen, then a practice game over.
+    Game w(42);
+    w.highScore = 12000;
+    Input right;
+    right.right = true;
+    for (int i = 0; i < 5; ++i) w.update(right, STEP), w.update(none, STEP);
+    run(w, none, 1.3f);
+    save(w, dir, "11-title-wave6");
+    w.update(fire, STEP);
+    w.update(none, STEP);
+    run(w, none, 1.5f);
+    save(w, dir, "12-wave6-start");
+    w.score = 4000;
+    w.lives = 1;
+    w.playerHit();
+    run(w, none, 2.0f);
+    save(w, dir, "13-practice-gameover");
     return 0;
 }

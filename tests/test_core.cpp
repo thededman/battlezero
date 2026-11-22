@@ -144,6 +144,56 @@ static void run(Game& g, const Input& in, float seconds) {
     for (int i = 0; i < static_cast<int>(seconds * 60); ++i) g.update(in, STEP);
 }
 
+static void tap(Game& g, Input in) {
+    g.update(in, STEP);
+    g.update(Input(), STEP);
+}
+
+static void testWaveSelect() {
+    Game g(7);
+    Input left, right;
+    left.left = true;
+    right.right = true;
+    tap(g, left);
+    CHECK(g.startWave == 1); // cannot go below 1
+    for (int i = 0; i < 4; ++i) tap(g, right);
+    CHECK(g.startWave == 5);
+    for (int i = 0; i < 40; ++i) tap(g, right);
+    CHECK(g.startWave == Game::MAX_START_WAVE);
+    for (int i = 0; i < 8; ++i) tap(g, left);
+    CHECK(g.startWave == 5);
+    // Holding the key counts once.
+    run(g, right, 0.5f);
+    CHECK(g.startWave == 6);
+    tap(g, left);
+
+    tap(g, held(true));
+    CHECK(g.state == State::Play && g.practice);
+    run(g, held(), 1.5f);
+    CHECK(g.wave == 5 && g.aliveEnemies() >= 1);
+
+    // A practice run never sets the high score.
+    g.score = 99000;
+    g.lives = 1;
+    g.playerHit();
+    run(g, held(), 2.5f);
+    CHECK(g.state == State::GameOver);
+    CHECK(g.highScore == 0 && !g.highScoreDirty);
+
+    // Back at wave 1 the run counts again.
+    run(g, held(), 1.0f); // the game-over screen ignores keys for its first second
+    tap(g, held(true));
+    CHECK(g.state == State::Title);
+    for (int i = 0; i < 8; ++i) tap(g, left);
+    tap(g, held(true));
+    CHECK(g.state == State::Play && !g.practice);
+    g.score = 500;
+    g.lives = 1;
+    g.playerHit();
+    run(g, held(), 2.5f);
+    CHECK(g.state == State::GameOver && g.highScore == 500 && g.highScoreDirty);
+}
+
 static void testGame() {
     Game g(7);
     CHECK(g.state == State::Title);
@@ -374,6 +424,7 @@ int main() {
     testWorld();
     testEnemies();
     testGame();
+    testWaveSelect();
     testCalibrate();
     if (failures) {
         std::printf("%d check(s) failed\n", failures);

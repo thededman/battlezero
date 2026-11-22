@@ -13,6 +13,7 @@ BattleZero is an original game. It is not affiliated with M5Stack.
 | Steer | tilt left / right, or Z / C | Z / C or arrow keys; Q / E hold a fake tilt |
 | Forward / reverse | F / X | F / X or up / down |
 | Fire | Space or Enter | Space or Enter |
+| Choose the starting wave (title screen) | Z / C | Z / C or left / right |
 | Recentre tilt | R | R |
 | Tilt on / off | T | T |
 | Sound on / off | M | M |
