@@ -55,7 +55,9 @@ struct Game {
     // Things a front end loads, saves or acts on.
     int highScore = 0;
     bool highScoreDirty = false;
-    int tiltAxis = 0, tiltSign = -1;
+    // Defaults match the CardputerZero's BMI270 mounting, per M5Stack's Compass app:
+    // sensor y runs left-to-right across the screen, sensor x runs top-to-bottom.
+    int tiltAxis = 1, tiltSign = -1;
     bool tiltConfigDirty = false;
     bool wantsQuit = false;
     uint32_t sounds = 0;   // Sound bits raised since the front end last cleared it

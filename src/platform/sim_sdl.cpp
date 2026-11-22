@@ -76,9 +76,10 @@ int main(int argc, char** argv) {
             float want = (k[SDL_SCANCODE_E] ? 0.4f : 0.0f) - (k[SDL_SCANCODE_Q] ? 0.4f : 0.0f);
             fakeAngle += (want - fakeAngle) * (dt * 6 > 1 ? 1 : dt * 6);
             in.tiltAvailable = true;
-            // Matches the default direction setting: right edge down reads negative x.
-            in.accel[0] = -std::sin(fakeAngle);
-            in.accel[1] = 0.4f;
+            // Same axes as the device: sensor y is left-right, and it reads negative
+            // when the right edge drops. Sensor x carries the pitch towards the player.
+            in.accel[1] = -std::sin(fakeAngle);
+            in.accel[0] = -0.4f;
             in.accel[2] = std::cos(fakeAngle);
         }
 

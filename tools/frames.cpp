@@ -48,13 +48,13 @@ int main(int argc, char** argv) {
     save(g, dir, "1-title");
 
     // Calibration screen (as on the device, with a sensor present).
-    tilt.accel[0] = -0.2f;
+    tilt.accel[1] = -0.2f;
     tilt.fire = true;
     g.update(tilt, STEP);
     tilt.fire = false;
     run(g, tilt, 0.5f);
     save(g, dir, "2-calibrate");
-    tilt.accel[0] = 0;
+    tilt.accel[1] = 0;
     tilt.fire = true;
     g.update(tilt, STEP);
     tilt.fire = false;
@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
     // Driving and turning past obstacles.
     Input drive = tilt;
     drive.forward = true;
-    drive.accel[0] = -0.25f;
+    drive.accel[1] = -0.25f;
     run(g, drive, 2.5f);
     save(g, dir, "4-driving");
 
