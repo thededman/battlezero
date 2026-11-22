@@ -185,7 +185,7 @@ static void testGame() {
     CHECK(g.heading > 0.5f);
     Input tilted;
     tilted.tiltAvailable = true;
-    tilted.accel[0] = -0.5f; // default sign is -1: negative x means tilted right
+    tilted.accel[1] = -0.5f; // default axis y, sign -1: negative y means tilted right
     tilted.accel[2] = 0.8f;
     g.heading = 0;
     g.tilt = Tilt();
@@ -315,7 +315,57 @@ static void testSound() {
     CHECK(g.state == State::Paused && g.engine == 0); // engine stops when paused
 }
 
+// What the CardputerZero's sensor reads for a given pose. Screen frame: x right, y top,
+// z out of the screen. The sensor is mounted so that raw = (-screen.y, screen.x, screen.z)
+// (M5Stack Compass app, screenToBmi270).
+static void devicePose(float pitchDeg, float rollRightDeg, float raw[3]) {
+    float p = pitchDeg * PI / 180, r = rollRightDeg * PI / 180;
+    float sx = -std::sin(r), sy = std::sin(p) * std::cos(r), sz = std::cos(p) * std::cos(r);
+    raw[0] = -sy;
+    raw[1] = sx;
+    raw[2] = sz;
+}
+
+static void testDeviceAxes() {
+    // With the built-in defaults and no calibration changes, on the real mounting:
+    for (float pitch : {0.0f, 40.0f, 80.0f}) { // flat on a table up to nearly upright
+        Game g(4);
+        Input in;
+        in.tiltAvailable = true;
+        devicePose(pitch, 0, in.accel);
+        in.fire = true;
+        g.update(in, STEP);
+        in.fire = false;
+        run(g, in, 0.3f);
+        CHECK(g.state == State::Calibrate);
+        in.fire = true;
+        g.update(in, STEP); // set level, start
+        in.fire = false;
+        run(g, in, 0.5f);
+        CHECK(g.state == State::Play);
+        NEAR(g.heading, 0, 1e-3f); // held level: straight on
+
+        devicePose(pitch, 20, in.accel); // right edge down
+        run(g, in, 0.6f);
+        CHECK(g.heading > 0.3f); // turns right
+
+        g.heading = 0;
+        devicePose(pitch, -20, in.accel); // left edge down
+        run(g, in, 0.8f);
+        CHECK(g.heading < -0.3f); // turns left
+
+        // Tipping it towards or away from you must not steer.
+        devicePose(pitch, 0, in.accel);
+        run(g, in, 0.5f);
+        g.heading = 0;
+        devicePose(pitch + 8, 0, in.accel);
+        run(g, in, 0.5f);
+        NEAR(g.heading, 0, 1e-3f);
+    }
+}
+
 int main() {
+    testDeviceAxes();
     testSound();
     testMaths();
     testRaster();
