@@ -22,6 +22,9 @@ constexpr Color CYAN_DIM = rgb(0, 100, 120);
 constexpr Color RED = rgb(255, 70, 20);
 constexpr Color WHITE = rgb(255, 255, 255);
 constexpr Color VIOLET = rgb(205, 130, 255);
+constexpr Color GREY = rgb(185, 190, 200);
+constexpr Color ROSE = rgb(255, 70, 130);
+constexpr Color GREEN = rgb(90, 255, 140);
 
 struct Frame {
     Color px[SCREEN_W * SCREEN_H];

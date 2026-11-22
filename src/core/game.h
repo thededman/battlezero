@@ -48,6 +48,7 @@ struct Game {
     void spawnWave(int n);
     void spawnEnemy(EnemyType type);
     void killEnemy(Enemy& e);
+    void hitEnemy(Enemy& e);
     void playerHit();
     int aliveEnemies() const;
 

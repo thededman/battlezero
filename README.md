@@ -2,7 +2,8 @@
 
 A first-person wireframe arena shooter for the M5Stack CardputerZero. You drive a
 CardputerZero across a flat plain of oversized hardware and fight off the older
-Cardputer models. Tilt the device left and right to steer; keys drive and fire.
+Cardputer models and, from wave 6, M5Stack's Core line-up. Tilt the device left and
+right to steer; keys drive and fire.
 
 BattleZero is an original game. It is not affiliated with M5Stack.
 

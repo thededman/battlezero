@@ -115,25 +115,78 @@ static void testEnemies() {
     Rng rng;
     World empty;
     Target player = {0, 0, 0, 0};
-    for (EnemyType type : {EnemyType::K132, EnemyType::V11, EnemyType::Adv}) {
+    for (int ti = 0; ti < static_cast<int>(EnemyType::COUNT); ++ti) {
+        EnemyType type = static_cast<EnemyType>(ti);
         Enemy e;
         e.type = type;
         e.x = 0;
         e.z = 150;
         e.heading = PI;
+        e.hp = spec(type).hp;
         bool fired = false;
         for (int i = 0; i < 60 * 40 && !fired; ++i) fired = updateEnemy(e, empty, player, STEP, rng);
         CHECK(fired); // every model eventually closes in and shoots
-        CHECK(dist2(e.x, e.z, 0, 0) < 130.0f * 130.0f);
+        CHECK(dist2(e.x, e.z, 0, 0) < 180.0f * 180.0f);
         if (type != EnemyType::Adv) {
             float aim = wrapAngle(bearingTo(e.x, e.z, 0, 0) - e.heading);
             CHECK(std::fabs(aim) < 0.05f); // and is pointing at the player when it does
         }
         CHECK(e.cooldown > 1.0f);
+        // Burst models loose the rest of the burst straight after.
+        int more = 0;
+        for (int i = 0; i < 60; ++i) more += updateEnemy(e, empty, player, STEP, rng) ? 1 : 0;
+        CHECK(more == spec(type).burst - 1);
     }
+
+    // The sniper backs off when crowded; the rusher closes right in.
+    Enemy sniper;
+    sniper.type = EnemyType::Core2;
+    sniper.x = 0, sniper.z = 60, sniper.cooldown = 99;
+    for (int i = 0; i < 60 * 10; ++i) updateEnemy(sniper, empty, player, STEP, rng);
+    CHECK(dist2(sniper.x, sniper.z, 0, 0) > 100.0f * 100.0f);
+    Enemy rusher;
+    rusher.type = EnemyType::CoreFire;
+    rusher.x = 0, rusher.z = 150, rusher.heading = PI, rusher.cooldown = 99;
+    for (int i = 0; i < 60 * 8; ++i) updateEnemy(rusher, empty, player, STEP, rng);
+    CHECK(dist2(rusher.x, rusher.z, 0, 0) < 45.0f * 45.0f);
 }
 
-static Input held(bool fire = false, bool fwd = false) {
+static Input held(bool fire, bool fwd);
+static void run(Game& g, const Input& in, float seconds);
+
+static void testCoreLineup() {
+    // Every model has a mesh and a sane spec.
+    for (int ti = 0; ti < static_cast<int>(EnemyType::COUNT); ++ti) {
+        const EnemySpec& s = spec(static_cast<EnemyType>(ti));
+        const Model& m = model(s.model);
+        CHECK(m.coarseEdges >= 12 && m.coarseEdges <= static_cast<int>(m.e.size()));
+        CHECK(s.hp >= 1 && s.burst >= 1 && s.radius > 3 && s.score > 0);
+    }
+    // The Core Basic takes two hits.
+    Game g(9);
+    g.update(held(true, false), STEP);
+    g.update(held(false, false), STEP);
+    run(g, held(false, false), 1.5f);
+    g.world.obstacles.clear();
+    g.enemies.clear();
+    g.spawnEnemy(EnemyType::CoreBasic);
+    g.enemies[0].x = 0, g.enemies[0].z = 50, g.enemies[0].cooldown = 99;
+    g.px = g.pz = g.heading = 0;
+    int before = g.score;
+    run(g, held(true, false), 0.6f);
+    CHECK(g.aliveEnemies() == 1 && g.enemies[0].hp == 1 && g.score == before);
+    run(g, held(true, false), 1.0f);
+    CHECK(g.aliveEnemies() == 0 && g.score == before + 2500);
+    // Wave 6 introduces it.
+    g.spawnWave(6);
+    CHECK(g.enemies.size() == 1 && g.enemies[0].type == EnemyType::CoreBasic && g.enemies[0].hp == 2);
+    g.spawnWave(10);
+    CHECK(g.enemies[0].type == EnemyType::Core2);
+    g.render(frame);
+}
+
+static Input held(bool fire = false, bool fwd = false);
+static Input held(bool fire, bool fwd) {
     Input in;
     in.fire = fire;
     in.forward = fwd;
@@ -373,6 +426,7 @@ int main() {
     testTilt();
     testWorld();
     testEnemies();
+    testCoreLineup();
     testGame();
     testCalibrate();
     if (failures) {

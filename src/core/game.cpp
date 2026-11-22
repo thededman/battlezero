@@ -42,6 +42,7 @@ void Game::spawnEnemy(EnemyType type) {
         break;
     }
     e.heading = bearingTo(e.x, e.z, px, pz);
+    e.hp = spec(type).hp;
     e.cooldown = rng.range(2.0f, 4.0f);
     e.side = rng.uniform() < 0.5f ? -1 : 1;
     enemies.push_back(e);
@@ -59,11 +60,27 @@ void Game::spawnWave(int n) {
     case 3: spawnEnemy(T::V11); break;
     case 4: spawnEnemy(T::V11), spawnEnemy(T::K132); break;
     case 5: spawnEnemy(T::Adv); break;
-    case 6: spawnEnemy(T::Adv), spawnEnemy(T::K132); break;
+    case 6: spawnEnemy(T::CoreBasic); break;
     case 7: spawnEnemy(T::Adv), spawnEnemy(T::V11); break;
+    case 8: spawnEnemy(T::CoreFire); break;
+    case 9: spawnEnemy(T::CoreBasic), spawnEnemy(T::V11); break;
+    case 10: spawnEnemy(T::Core2); break;
+    case 11: spawnEnemy(T::CoreFire), spawnEnemy(T::Adv); break;
+    case 12: spawnEnemy(T::Core2), spawnEnemy(T::CoreBasic); break;
     default:
-        for (int i = 0; i < 3; ++i) spawnEnemy(static_cast<T>(rng.next() % 3));
+        for (int i = 0; i < 3; ++i) spawnEnemy(static_cast<T>(rng.next() % static_cast<uint32_t>(T::COUNT)));
     }
+}
+
+// A shell has struck: armoured models survive the first one.
+void Game::hitEnemy(Enemy& e) {
+    e.hp -= 1;
+    if (e.hp <= 0) {
+        killEnemy(e);
+        return;
+    }
+    e.flash = 0.25f;
+    sounds |= SND_BUMP;
 }
 
 void Game::killEnemy(Enemy& e) {
@@ -247,8 +264,8 @@ void Game::playStep(const Input& in) {
         bool dead = s.life <= 0 || world.blocked(s.x, s.z, 0.3f);
         if (!dead && s.fromPlayer) {
             for (Enemy& e : enemies)
-                if (e.alive && dist2(s.x, s.z, e.x, e.z) < ENEMY_RADIUS * ENEMY_RADIUS) {
-                    killEnemy(e);
+                if (e.alive && dist2(s.x, s.z, e.x, e.z) < spec(e.type).radius * spec(e.type).radius) {
+                    hitEnemy(e);
                     dead = true;
                     break;
                 }
