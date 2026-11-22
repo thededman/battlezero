@@ -1,5 +1,6 @@
-// Speaker output through ALSA. The ALSA library is loaded at run time, so the game still
-// starts (silently) on a system without it, or when the sound device is busy.
+// Speaker output. The CardputerZero routes sound through PipeWire, which holds the codec,
+// so the PulseAudio-compatible client library is tried first and plain ALSA second. Both
+// are loaded at run time: the game still starts (silently) if neither is usable.
 #pragma once
 #include <dlfcn.h>
 
@@ -21,8 +22,23 @@ struct AudioOut {
     int (*pcm_close)(void*) = nullptr;
     const char* (*strerror_)(int) = nullptr;
 
+    // And the simple PulseAudio API from libpulse-simple.so.0.
+    struct PaSpec {
+        int format;
+        uint32_t rate;
+        uint8_t channels;
+    };
+    struct PaBufferAttr {
+        uint32_t maxlength, tlength, prebuf, minreq, fragsize;
+    };
+    void* (*pa_new)(const char*, const char*, int, const char*, const char*, const PaSpec*, const void*,
+                    const PaBufferAttr*, int*) = nullptr;
+    int (*pa_write)(void*, const void*, size_t, int*) = nullptr;
+    void (*pa_free)(void*) = nullptr;
+
     void* lib = nullptr;
     void* pcm = nullptr;
+    void* pulse = nullptr;
     bz::Synth synth;
     std::mutex lock; // guards synth
     std::atomic<bool> stop{false};
@@ -33,7 +49,25 @@ struct AudioOut {
         return fn != nullptr;
     }
 
-    bool open() {
+    bool openPulse() {
+        lib = dlopen("libpulse-simple.so.0", RTLD_NOW);
+        if (!lib) return false;
+        if (!sym(pa_new, "pa_simple_new") || !sym(pa_write, "pa_simple_write") || !sym(pa_free, "pa_simple_free"))
+            return false;
+        PaSpec spec = {3 /* signed 16-bit little-endian */, static_cast<uint32_t>(bz::SOUND_RATE), 1};
+        // Ask for about 50 ms of buffering so effects land close to the action.
+        PaBufferAttr attr = {~0u, static_cast<uint32_t>(bz::SOUND_RATE * 2 / 20), ~0u, ~0u, ~0u};
+        int err = 0;
+        pulse = pa_new(nullptr, "BattleZero", 1 /* playback */, nullptr, "game", &spec, nullptr, &attr, &err);
+        if (!pulse) {
+            std::fprintf(stderr, "sound server not available (code %d), trying ALSA\n", err);
+            return false;
+        }
+        std::fprintf(stderr, "sound: system sound server, %d Hz mono\n", bz::SOUND_RATE);
+        return true;
+    }
+
+    bool openAlsa() {
         lib = dlopen("libasound.so.2", RTLD_NOW);
         if (!lib) {
             std::fprintf(stderr, "sound off: %s\n", dlerror());
@@ -64,6 +98,12 @@ struct AudioOut {
             return false;
         }
         std::fprintf(stderr, "sound: ALSA '%s', %d Hz mono\n", name, bz::SOUND_RATE);
+        return true;
+    }
+
+    // BATTLEZERO_AUDIO names an ALSA device and skips the sound server.
+    bool open() {
+        if (!(std::getenv("BATTLEZERO_AUDIO") == nullptr && openPulse()) && !openAlsa()) return false;
         worker = std::thread([this] {
             int16_t buf[256];
             while (!stop) {
@@ -71,8 +111,14 @@ struct AudioOut {
                     std::lock_guard<std::mutex> g(lock);
                     synth.render(buf, 256);
                 }
-                long n = pcm_writei(pcm, buf, 256); // blocks until there is room
-                if (n < 0 && pcm_recover(pcm, static_cast<int>(n), 1) < 0) break;
+                // Both writes block until there is room, which paces this thread.
+                if (pulse) {
+                    int err = 0;
+                    if (pa_write(pulse, buf, sizeof buf, &err) < 0) break;
+                } else {
+                    long n = pcm_writei(pcm, buf, 256);
+                    if (n < 0 && pcm_recover(pcm, static_cast<int>(n), 1) < 0) break;
+                }
             }
         });
         return true;
@@ -89,6 +135,10 @@ struct AudioOut {
     void close() {
         stop = true;
         if (worker.joinable()) worker.join();
+        if (pulse) {
+            pa_free(pulse);
+            pulse = nullptr;
+        }
         if (pcm) {
             pcm_drop(pcm);
             pcm_close(pcm);
