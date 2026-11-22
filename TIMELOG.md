@@ -5,3 +5,4 @@ One line per working day: date, hours, what was done. Cross-check at each releas
 
 | Date | Hours | What |
 |---|---|---|
+| 2026-11-22 | 0.5 | Planned the game with David, set up the repo, built the first playable version (core, tests, Mac simulator), device front end and package. Not yet run on the device. |

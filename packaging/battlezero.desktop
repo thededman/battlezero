@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=BattleZero
+Comment=Wireframe arena shooter with tilt steering
+Exec=/usr/bin/battlezero
+Icon=share/images/battlezero.png
+Terminal=false
+Categories=Game;
+StartupNotify=false
