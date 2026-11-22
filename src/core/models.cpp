@@ -55,6 +55,40 @@ Model makeCard(bool adv) {
     return m;
 }
 
+// The M5Stack Core family: a square body with the screen above three buttons.
+// kind 0 = Core Basic, 1 = Core Fire (deeper, LED bars down both sides), 2 = Core2 (larger
+// touch screen, three touch marks instead of buttons).
+Model makeCore(int kind) {
+    Model m;
+    const float d = kind == 1 ? CORE_FIRE_D : CORE_D, zf = d / 2;
+    addBox(m, 0, 0, 0, CORE_W, CORE_H, d);
+    if (kind == 2) addRect(m, -3.6f, 2.4f, 3.6f, 7.5f, zf);
+    else addRect(m, -3.4f, 3.0f, 3.4f, 7.3f, zf);
+    if (kind == 1) {
+        addBox(m, -CORE_W / 2 - 0.25f, 1.5f, 0, 0.5f, 5.0f, 1.0f);
+        addBox(m, CORE_W / 2 + 0.25f, 1.5f, 0, 0.5f, 5.0f, 1.0f);
+    }
+    for (int i = -1; i <= 1; ++i) {
+        float x = i * 2.4f;
+        if (kind == 2) { // touch marks: small diamonds
+            addLine(m, {x - 0.5f, 1.2f, zf}, {x, 1.7f, zf});
+            addLine(m, {x, 1.7f, zf}, {x + 0.5f, 1.2f, zf});
+            addLine(m, {x + 0.5f, 1.2f, zf}, {x, 0.7f, zf});
+            addLine(m, {x, 0.7f, zf}, {x - 0.5f, 1.2f, zf});
+        } else {
+            addRect(m, x - 0.8f, 0.9f, x + 0.8f, 1.9f, zf);
+        }
+    }
+    m.coarseEdges = static_cast<int>(m.e.size());
+    // Up close: the join between the core and its base, round the body.
+    float y = kind == 1 ? 2.6f : 0.5f, x0 = -CORE_W / 2, x1 = CORE_W / 2;
+    addLine(m, {x0, y, -zf}, {x0, y, zf});
+    addLine(m, {x1, y, -zf}, {x1, y, zf});
+    addLine(m, {x0, y, -zf}, {x1, y, -zf});
+    m.radius = 4.8f;
+    return m;
+}
+
 Model makeSdCard() {
     Model m;
     const float pts[5][2] = {{-5.5f, 0}, {5.5f, 0}, {5.5f, 12}, {2.5f, 15}, {-5.5f, 15}};
@@ -99,6 +133,7 @@ Model makeBrick() {
 
 const Model& model(ModelId id) {
     static const Model models[] = {makeCard(false), makeCard(false), makeCard(true),
+                                   makeCore(0),     makeCore(1),     makeCore(2),
                                    makeSdCard(),    makeGrove(),     makeBrick()};
     return models[static_cast<int>(id)];
 }

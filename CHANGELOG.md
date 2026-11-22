@@ -6,6 +6,15 @@ All notable changes to BattleZero are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Three new enemies from M5Stack's Core line-up, arriving from wave 6:
+  - **Core Basic** (grey): armoured, takes two hits, and fires three-shot bursts.
+  - **Core Fire** (rose): charges in close, fires a quick pair and swings away.
+  - **Core2** (green): a sniper that keeps its distance; its shot is fast, but it
+    winds up for a full second first.
+- Each new wave names the most dangerous model in it.
+
 ## [0.2.0] - 2026-11-22
 
 ### Added

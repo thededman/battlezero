@@ -94,6 +94,16 @@ int main(int argc, char** argv) {
     g.time = 0.2f;
     save(g, dir, "5-three-models");
 
+    // The Core line-up, same staging.
+    {
+        std::vector<Enemy> keep = g.enemies;
+        for (int i = 0; i < 3; ++i) g.enemies[i].type = static_cast<EnemyType>(3 + i), g.enemies[i].tell = 0;
+        save(g, dir, "5b-core-lineup");
+        for (int i = 0; i < 3; ++i) g.enemies[i].heading += 0.9f;
+        save(g, dir, "5c-core-turned");
+        g.enemies = keep;
+    }
+
     // Shoot the middle one: shell in flight, then the break-up.
     g.enemies[1].tell = 0;
     g.update(fire, STEP);

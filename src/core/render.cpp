@@ -43,8 +43,8 @@ void Game::render(Frame& f) const {
     if (state == State::Title) {
         Camera cam;
         cam.set(0, 0, 0, 4.0f);
-        const ModelId spin[] = {ModelId::CardK132, ModelId::CardAdv};
-        int which = static_cast<int>(time / 8.0f) % 2;
+        const ModelId spin[] = {ModelId::CardK132, ModelId::CoreBasic, ModelId::CardAdv, ModelId::CoreFire};
+        int which = static_cast<int>(time / 8.0f) % 4;
         drawModel(f, cam, model(spin[which]), 0, 30, time * 0.8f + PI, AMBER, true);
     }
 
@@ -93,6 +93,11 @@ void Game::render(Frame& f) const {
     } else if (banner > 0) {
         std::snprintf(buf, sizeof buf, "WAVE %d", wave);
         f.textCentered(160, 34, buf, CYAN, 2);
+        // Name what is coming, so a new model is introduced the first time it shows up.
+        const Enemy* lead = nullptr;
+        for (const Enemy& e : enemies)
+            if (e.alive && (!lead || spec(e.type).score > spec(lead->type).score)) lead = &e;
+        if (lead) f.textCentered(160, 54, spec(lead->type).name, spec(lead->type).color);
     }
 }
 
@@ -139,7 +144,7 @@ void Game::renderPlay(Frame& f) const {
         if (!e.alive) continue;
         const EnemySpec& s = spec(e.type);
         float d2 = dist2(e.x, e.z, px, pz);
-        drawModel(f, cam, model(s.model), e.x, e.z, e.heading, s.color, d2 < 90.0f * 90.0f);
+        drawModel(f, cam, model(s.model), e.x, e.z, e.heading, e.flash > 0 ? WHITE : s.color, d2 < 90.0f * 90.0f);
         // Wind-up tell: the infrared emitter on the top edge flashes before a shot.
         if (e.tell > 0 && static_cast<int>(time * 16) % 2 == 0) {
             Vec3 t = {e.x, CARD_H + 1.6f, e.z};
@@ -207,7 +212,7 @@ void Game::renderHud(Frame& f) const {
             int x = mid + static_cast<int>(rel / (PI / 2) * 60);
             f.fillRect(x - 1, 9, 3, 3, c);
         }
-        if (std::fabs(rel) < std::atan(ENEMY_RADIUS / dist)) locked = true;
+        if (std::fabs(rel) < std::atan(spec(e.type).radius / dist)) locked = true;
         // Off-screen threat arrows on the left or right edge.
         if (std::fabs(rel) > halfFov && state == State::Play) {
             bool right = rel > 0;

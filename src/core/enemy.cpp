@@ -4,9 +4,13 @@ namespace bz {
 
 const EnemySpec& spec(EnemyType t) {
     static const EnemySpec specs[] = {
-        {ModelId::CardK132, AMBER, 8.0f, 0.7f, 70.0f, 3.2f, 0.45f, 1000, "CARDPUTER"},
-        {ModelId::CardV11, WHITE, 13.0f, 1.0f, 85.0f, 2.6f, 0.60f, 2000, "CARDPUTER V1.1"},
-        {ModelId::CardAdv, VIOLET, 17.0f, 1.5f, 100.0f, 2.2f, 0.25f, 3000, "CARDPUTER-ADV"},
+        // model, colour, speed, turn, shot speed, reload, tell, score, name, radius, hp, burst, gap
+        {ModelId::CardK132, AMBER, 8.0f, 0.7f, 70.0f, 3.2f, 0.45f, 1000, "CARDPUTER", 6.5f, 1, 1, 0},
+        {ModelId::CardV11, WHITE, 13.0f, 1.0f, 85.0f, 2.6f, 0.60f, 2000, "CARDPUTER V1.1", 6.5f, 1, 1, 0},
+        {ModelId::CardAdv, VIOLET, 17.0f, 1.5f, 100.0f, 2.2f, 0.25f, 3000, "CARDPUTER-ADV", 6.5f, 1, 1, 0},
+        {ModelId::CoreBasic, GREY, 7.0f, 0.8f, 75.0f, 3.6f, 0.50f, 2500, "CORE BASIC", 4.8f, 2, 3, 0.22f},
+        {ModelId::CoreFire, ROSE, 19.0f, 1.6f, 95.0f, 1.8f, 0.20f, 3500, "CORE FIRE", 4.8f, 1, 2, 0.15f},
+        {ModelId::Core2, GREEN, 11.0f, 1.2f, 170.0f, 4.0f, 1.00f, 4000, "CORE2", 4.8f, 1, 1, 0},
     };
     return specs[static_cast<int>(t)];
 }
@@ -60,6 +64,19 @@ bool aimAndWindUp(Enemy& e, float aim, float dt) {
 bool updateEnemy(Enemy& e, const World& world, const Target& p, float dt, Rng& rng) {
     const EnemySpec& s = spec(e.type);
     if (e.cooldown > 0) e.cooldown -= dt;
+    if (e.flash > 0) e.flash -= dt;
+
+    // Mid-burst: hold position, keep tracking, loose the remaining shots.
+    if (e.burstLeft > 0) {
+        turnToward(e, bearingTo(e.x, e.z, p.x, p.z), s.turnRate, dt);
+        e.burstTimer -= dt;
+        if (e.burstTimer <= 0) {
+            e.burstLeft -= 1;
+            e.burstTimer = s.burstGap;
+            return true;
+        }
+        return false;
+    }
 
     // Winding up: frozen until the shot goes.
     if (e.tell > 0) {
@@ -67,6 +84,8 @@ bool updateEnemy(Enemy& e, const World& world, const Target& p, float dt, Rng& r
         if (e.tell <= 0) {
             e.tell = 0;
             e.cooldown = s.reload;
+            e.burstLeft = s.burst - 1;
+            e.burstTimer = s.burstGap;
             e.state = 2;
             e.stateTime = 0;
             return true;
@@ -80,8 +99,10 @@ bool updateEnemy(Enemy& e, const World& world, const Target& p, float dt, Rng& r
 
     switch (e.type) {
     case EnemyType::K132:
-        // Plods into range, stops and shoots.
-        if (dist > 95.0f) drive(e, world, p, bearing, 1.0f, dt);
+    case EnemyType::CoreBasic:
+        // Plods into range, stops and shoots. The Core Basic does the same with a
+        // three-round burst (one per button) and shrugs off the first hit.
+        if (dist > (e.type == EnemyType::K132 ? 95.0f : 85.0f)) drive(e, world, p, bearing, 1.0f, dt);
         else aimAndWindUp(e, bearing, dt);
         break;
 
@@ -123,6 +144,38 @@ bool updateEnemy(Enemy& e, const World& world, const Target& p, float dt, Rng& r
         }
         break;
     }
+
+    case EnemyType::CoreFire:
+        // Charges in close, fires a quick pair, swings away and comes round again.
+        if (e.state == 2) {
+            drive(e, world, p, bearing + 1.4f * static_cast<float>(e.side), 1.0f, dt);
+            if (e.stateTime > 1.3f) {
+                e.state = 0;
+                e.stateTime = 0;
+                e.side = -e.side;
+            }
+        } else if (dist > 40.0f) {
+            drive(e, world, p, bearing, 1.0f, dt);
+        } else {
+            aimAndWindUp(e, bearing, dt);
+        }
+        break;
+
+    case EnemyType::Core2: {
+        // Sniper: keeps its distance and takes a slow, fast-flying, well-aimed shot.
+        if (dist < 110.0f) {
+            drive(e, world, p, bearing + PI, 1.0f, dt);
+        } else if (dist > 175.0f) {
+            drive(e, world, p, bearing, 1.0f, dt);
+        } else {
+            float t = dist / s.shotSpeed;
+            aimAndWindUp(e, bearingTo(e.x, e.z, p.x + p.vx * t, p.z + p.vz * t), dt);
+        }
+        break;
+    }
+
+    case EnemyType::COUNT:
+        break;
     }
     return false;
 }
