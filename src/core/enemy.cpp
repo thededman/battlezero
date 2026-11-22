@@ -49,6 +49,7 @@ bool aimAndWindUp(Enemy& e, float aim, float dt) {
     turnToward(e, aim, s.turnRate * 1.5f, dt);
     if (e.cooldown <= 0 && std::fabs(wrapAngle(aim - e.heading)) < AIM_TOLERANCE) {
         e.tell = s.tellTime;
+        e.windingUp = true;
         return true;
     }
     return false;

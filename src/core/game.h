@@ -6,6 +6,7 @@
 #include "enemy.h"
 #include "input.h"
 #include "raster.h"
+#include "sound.h"
 #include "tilt.h"
 #include "world.h"
 
@@ -56,6 +57,9 @@ struct Game {
     int tiltAxis = 0, tiltSign = -1;
     bool tiltConfigDirty = false;
     bool wantsQuit = false;
+    uint32_t sounds = 0;   // Sound bits raised since the front end last cleared it
+    float engine = 0;      // 0 = engine off, otherwise 0..1 with speed
+    bool muted = false;
 
     State state = State::Title;
     Rng rng;
@@ -84,7 +88,7 @@ private:
 
     struct Presses {
         bool fire = false, pause = false, recenter = false, tiltToggle = false, invert = false,
-             axis = false;
+             axis = false, mute = false;
     } pressed;
     Input prev;
     float acc = 0;

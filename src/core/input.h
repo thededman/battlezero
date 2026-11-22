@@ -13,6 +13,7 @@ struct Input {
     bool tiltToggle = false; // T
     bool invert = false;     // I, calibration screen
     bool axis = false;       // A, calibration screen
+    bool mute = false;       // M
     bool tiltAvailable = false;
     float accel[3] = {0, 0, 1}; // any consistent unit; only the direction is used
 };

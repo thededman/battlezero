@@ -27,6 +27,7 @@ struct Enemy {
     int side = 1;        // which way it circles or dodges
     float avoid = 0;     // > 0 while steering round something
     bool alive = true;
+    bool windingUp = false; // set on the step a wind-up begins, for the warning blip
 };
 
 struct Target {

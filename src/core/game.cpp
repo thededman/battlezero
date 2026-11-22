@@ -50,6 +50,7 @@ void Game::spawnEnemy(EnemyType type) {
 void Game::spawnWave(int n) {
     wave = n;
     banner = 2.0f;
+    sounds |= SND_WAVE;
     enemies.clear();
     using T = EnemyType;
     switch (n) {
@@ -67,6 +68,7 @@ void Game::spawnWave(int n) {
 
 void Game::killEnemy(Enemy& e) {
     e.alive = false;
+    sounds |= SND_KILL;
     const EnemySpec& s = spec(e.type);
     score += s.score;
     const Model& m = model(s.model);
@@ -83,6 +85,7 @@ void Game::killEnemy(Enemy& e) {
 
 void Game::playerHit() {
     lives -= 1;
+    sounds |= SND_HIT;
     state = State::Dying;
     stateTime = 0;
     speed = 0;
@@ -104,6 +107,7 @@ void Game::update(const Input& in, float dt) {
     pressed.tiltToggle |= in.tiltToggle && !prev.tiltToggle;
     pressed.invert |= in.invert && !prev.invert;
     pressed.axis |= in.axis && !prev.axis;
+    pressed.mute |= in.mute && !prev.mute;
     prev = in;
 
     acc += clampf(dt, 0.0f, 0.1f);
@@ -120,6 +124,8 @@ void Game::step(const Input& in) {
     tiltSeen = in.tiltAvailable;
     if (in.tiltAvailable) tilt.update(in.accel, tiltAxis, tiltSign, STEP);
     if (pressed.recenter) tilt.recenter();
+    if (pressed.mute) muted = !muted;
+    engine = 0;
 
     switch (state) {
     case State::Title:
@@ -155,6 +161,7 @@ void Game::step(const Input& in) {
         if (stateTime > 1.6f) {
             if (lives <= 0) {
                 state = State::GameOver;
+                sounds |= SND_GAME_OVER;
                 stateTime = 0;
                 if (score > highScore) highScore = score, highScoreDirty = true;
             } else {
@@ -198,6 +205,7 @@ void Game::playStep(const Input& in) {
             bump = true;
     atEdge = !world.inside(nx, nz, PLAYER_RADIUS);
     if (bump || atEdge) {
+        if (std::fabs(speed) > 4.0f) sounds |= SND_BUMP;
         speed = 0;
         pvx = pvz = 0;
     } else {
@@ -214,12 +222,16 @@ void Game::playStep(const Input& in) {
     if (in.fire && reload <= 0 && !mine) {
         shots.push_back({px + fx * 3.5f, pz + fz * 3.5f, fx * SHOT_SPEED, fz * SHOT_SPEED, 2.2f, true});
         reload = 0.5f;
+        sounds |= SND_FIRE;
     }
 
     Target me = {px, pz, pvx, pvz};
     for (Enemy& e : enemies) {
         if (!e.alive) continue;
-        if (updateEnemy(e, world, me, STEP, rng)) {
+        bool fired = updateEnemy(e, world, me, STEP, rng);
+        if (e.windingUp) sounds |= SND_TELL, e.windingUp = false;
+        if (fired) {
+            sounds |= SND_ENEMY_FIRE;
             const EnemySpec& s = spec(e.type);
             float ex = std::sin(e.heading), ez = std::cos(e.heading);
             shots.push_back({e.x + ex * 3.0f, e.z + ez * 3.0f, ex * s.shotSpeed, ez * s.shotSpeed, 4.0f, false});
@@ -260,6 +272,7 @@ void Game::playStep(const Input& in) {
     }
 
     if (banner > 0) banner -= STEP;
+    engine = 0.25f + 0.75f * std::fabs(speed) / PLAYER_SPEED;
     if (hit) {
         playerHit();
         return;

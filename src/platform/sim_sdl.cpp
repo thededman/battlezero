@@ -9,13 +9,18 @@
 using namespace bz;
 
 static Frame frame;
+static Synth synth;
+
+static void audioCallback(void*, Uint8* stream, int len) {
+    synth.render(reinterpret_cast<int16_t*>(stream), len / 2);
+}
 
 int main(int argc, char** argv) {
     bool fakeTilt = false;
     for (int i = 1; i < argc; ++i)
         if (!std::strcmp(argv[i], "--tilt")) fakeTilt = true;
 
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
         SDL_Log("SDL_Init failed: %s", SDL_GetError());
         return 1;
     }
@@ -29,6 +34,16 @@ int main(int argc, char** argv) {
         SDL_Log("SDL setup failed: %s", SDL_GetError());
         return 1;
     }
+
+    SDL_AudioSpec want{}, have{};
+    want.freq = SOUND_RATE;
+    want.format = AUDIO_S16SYS;
+    want.channels = 1;
+    want.samples = 512;
+    want.callback = audioCallback;
+    SDL_AudioDeviceID dev = SDL_OpenAudioDevice(nullptr, 0, &want, &have, 0);
+    if (dev) SDL_PauseAudioDevice(dev, 0);
+    else SDL_Log("no sound: %s", SDL_GetError());
 
     Game game(static_cast<uint32_t>(SDL_GetPerformanceCounter()));
     Uint64 last = SDL_GetPerformanceCounter();
@@ -51,6 +66,7 @@ int main(int argc, char** argv) {
         in.tiltToggle = k[SDL_SCANCODE_T];
         in.invert = k[SDL_SCANCODE_I];
         in.axis = k[SDL_SCANCODE_A];
+        in.mute = k[SDL_SCANCODE_M];
 
         Uint64 now = SDL_GetPerformanceCounter();
         float dt = static_cast<float>(now - last) / static_cast<float>(SDL_GetPerformanceFrequency());
@@ -67,6 +83,14 @@ int main(int argc, char** argv) {
         }
 
         game.update(in, dt);
+        if (dev) {
+            SDL_LockAudioDevice(dev);
+            synth.trigger(game.sounds);
+            synth.setEngine(game.engine);
+            synth.muted = game.muted;
+            SDL_UnlockAudioDevice(dev);
+        }
+        game.sounds = 0;
         game.render(frame);
         SDL_UpdateTexture(tex, nullptr, frame.px, SCREEN_W * sizeof(Color));
         SDL_RenderClear(ren);

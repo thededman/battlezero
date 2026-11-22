@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <string>
 
+#include "dev_audio.h"
 #include "dev_fb.h"
 #include "dev_imu.h"
 #include "dev_keys.h"
@@ -57,6 +58,8 @@ int main() {
         return 1;
     }
     bool haveImu = imu.open();
+    AudioOut audio;
+    audio.open(); // carries on silently if this fails
 
     Game game(static_cast<uint32_t>(time(nullptr)));
     std::string scorePath = ensureDir(".local/share/battlezero") + "/highscore";
@@ -92,6 +95,9 @@ int main() {
         game.update(in, static_cast<float>(now - last));
         last = now;
 
+        audio.update(game.sounds, game.engine, game.muted);
+        game.sounds = 0;
+
         game.render(frame);
         if (showFps) {
             if (++frames, now - fpsFrom >= 1.0) {
@@ -125,6 +131,7 @@ int main() {
         }
     }
 
+    audio.close();
     imu.close();
     keys.close();
     fb.close();

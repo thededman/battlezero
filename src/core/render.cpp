@@ -80,7 +80,7 @@ void Game::render(Frame& f) const {
         f.rect(90, 52, 140, 62, CYAN);
         f.textCentered(160, 60, "PAUSED", CYAN, 2);
         f.textCentered(160, 84, "SPACE: RESUME", WHITE);
-        f.textCentered(160, 98, "ESC: QUIT", WHITE);
+        f.textCentered(160, 98, "ESC: QUIT   M: SOUND", WHITE);
     } else if (state == State::Dying) {
         int n = static_cast<int>(stateTime * 30);
         for (int i = 0; i < 12 && i < n; ++i)
@@ -229,6 +229,7 @@ void Game::renderHud(Frame& f) const {
     if (locked) f.rect(static_cast<int>(cx) - 3, static_cast<int>(cy) - 3, 7, 7, WHITE);
 
     if (atEdge && state == State::Play) f.textCentered(160, 150, "EDGE OF THE BOARD", RED);
+    if (muted) f.text(SCREEN_W - 27, 16, "MUTE", CYAN_DIM);
     if (tiltSeen && !tiltEnabled) f.text(3, 160, "TILT OFF", CYAN_DIM);
     else if (tiltSeen) {
         // Small tilt needle bottom-left so the player can see their centre.

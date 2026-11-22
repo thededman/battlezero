@@ -75,6 +75,7 @@ struct Keys {
         in.tiltToggle = down[KEY_T];
         in.invert = down[KEY_I];
         in.axis = down[KEY_A];
+        in.mute = down[KEY_M];
     }
 
     void close() {
