@@ -6,6 +6,8 @@ All notable changes to BattleZero are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-22
+
 ### Added
 
 - Sound through the speaker: your shot, enemy fire, a warning blip when an enemy is
