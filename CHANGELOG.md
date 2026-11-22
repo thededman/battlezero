@@ -6,6 +6,8 @@ All notable changes to BattleZero are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-22
+
 ### Added
 
 - First playable BattleZero: drive a CardputerZero across a wireframe plain and fight
