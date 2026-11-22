@@ -253,7 +253,70 @@ static void testCalibrate() {
     CHECK(g.state == State::Play);
 }
 
+static void testSound() {
+    static int16_t buf[SOUND_RATE * 2];
+    Synth s;
+    CHECK(s.silent());
+    s.render(buf, 1000);
+    bool quiet = true;
+    for (int i = 0; i < 1000; ++i) quiet &= buf[i] == 0;
+    CHECK(quiet); // nothing playing: digital silence
+
+    s.trigger(SND_FIRE);
+    CHECK(!s.silent());
+    s.render(buf, SOUND_RATE / 10);
+    int peak = 0;
+    for (int i = 0; i < SOUND_RATE / 10; ++i) peak = std::abs(buf[i]) > peak ? std::abs(buf[i]) : peak;
+    CHECK(peak > 3000);
+    s.render(buf, SOUND_RATE); // the shot is 0.18 s long: finished by now
+    CHECK(s.silent());
+
+    // Everything at once stays inside 16 bits, and a flood of triggers is safe.
+    for (int i = 0; i < 40; ++i) s.trigger(0xFF);
+    s.setEngine(1);
+    s.render(buf, SOUND_RATE * 2);
+    for (int i = 0; i < SOUND_RATE * 2; ++i) peak = std::abs(buf[i]) > peak ? std::abs(buf[i]) : peak;
+    CHECK(peak <= 32000);
+
+    // Mute silences the output; the engine fades out when switched off.
+    s.muted = true;
+    s.render(buf, 500);
+    CHECK(buf[250] == 0);
+    s.muted = false;
+    s.setEngine(0);
+    s.render(buf, SOUND_RATE * 2);
+    s.render(buf, SOUND_RATE * 2);
+    CHECK(s.silent());
+
+    // The game raises the right events.
+    Game g(7);
+    g.update(held(true), STEP);
+    g.update(held(false), STEP);
+    CHECK(g.engine == 0 || g.state == State::Play);
+    run(g, held(), 1.5f);
+    CHECK(g.sounds & SND_WAVE);
+    CHECK(g.engine > 0.2f && g.engine < 0.3f); // idling
+    g.sounds = 0;
+    g.world.obstacles.clear();
+    g.enemies[0].x = 0, g.enemies[0].z = 60, g.enemies[0].cooldown = 99;
+    g.px = g.pz = g.heading = 0;
+    run(g, held(true), 1.0f);
+    CHECK((g.sounds & SND_FIRE) && (g.sounds & SND_KILL));
+    run(g, held(false, true), 1.5f);
+    CHECK(g.engine > 0.9f); // flat out
+    Input m;
+    m.mute = true;
+    g.update(m, STEP);
+    CHECK(g.muted);
+    Input esc;
+    esc.pause = true;
+    g.update(esc, STEP);
+    g.update(Input(), STEP);
+    CHECK(g.state == State::Paused && g.engine == 0); // engine stops when paused
+}
+
 int main() {
+    testSound();
     testMaths();
     testRaster();
     testCamera();

@@ -15,6 +15,7 @@ BattleZero is an original game. It is not affiliated with M5Stack.
 | Fire | Space or Enter | Space or Enter |
 | Recentre tilt | R | R |
 | Tilt on / off | T | T |
+| Sound on / off | M | M |
 | Pause, then quit | ESC | ESC |
 
 ## Build

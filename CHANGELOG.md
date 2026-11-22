@@ -6,6 +6,12 @@ All notable changes to BattleZero are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Sound through the speaker: your shot, enemy fire, a warning blip when an enemy is
+  about to shoot, enemies breaking up, taking a hit, bumping into things, new waves,
+  game over, and an engine note that rises with speed. Press M to mute.
+
 ## [0.1.0] - 2026-11-22
 
 ### Added

@@ -33,6 +33,7 @@ BATTLEZERO_FPS=1 battlezero
 | `BATTLEZERO_FB` | framebuffer device, default `/dev/fb0` |
 | `BATTLEZERO_KEYS` | one evdev device to use instead of searching `/dev/input` |
 | `BATTLEZERO_IMU` | IIO device directory instead of searching for the BMI270 |
+| `BATTLEZERO_AUDIO` | ALSA playback device, default `default` |
 | `BATTLEZERO_FPS` | show a frame-rate counter |
 
 The tilt axis and direction chosen on the calibration screen are kept in

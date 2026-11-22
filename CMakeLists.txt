@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(battlezero VERSION 0.1.0 LANGUAGES CXX)
+project(battlezero VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,7 +10,7 @@ add_compile_options(-Wall -Wextra)
 
 add_library(bzcore STATIC
   src/core/raster.cpp src/core/tilt.cpp src/core/models.cpp src/core/world.cpp
-  src/core/enemy.cpp src/core/game.cpp src/core/render.cpp)
+  src/core/enemy.cpp src/core/game.cpp src/core/render.cpp src/core/sound.cpp)
 target_include_directories(bzcore PUBLIC src/core)
 
 # Headless tools: tests and scripted frame dumps. Built everywhere.
@@ -27,7 +27,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   add_executable(battlezero src/platform/dev_main.cpp)
   find_package(Threads REQUIRED)
   # libstdc++ is linked in so the package only depends on the C library.
-  target_link_libraries(battlezero bzcore Threads::Threads -static-libstdc++ -static-libgcc)
+  target_link_libraries(battlezero bzcore Threads::Threads ${CMAKE_DL_LIBS} -static-libstdc++ -static-libgcc)
 else()
   find_package(SDL2 QUIET)
   if(SDL2_FOUND)
