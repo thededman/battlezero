@@ -6,6 +6,12 @@ All notable changes to BattleZero are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Choose the wave you start at: on the title screen, Z and C lower and raise the
+  starting wave (1 to 13). A run that starts past wave 1 is practice and does not
+  set the high score; the game-over screen says so.
+
 ## [0.2.1] - 2026-11-22
 
 ### Fixed

@@ -51,6 +51,9 @@ void Game::render(Frame& f) const {
     switch (state) {
     case State::Title:
         f.textCentered(160, 8, "BATTLEZERO", CYAN, 3);
+        std::snprintf(buf, sizeof buf, "Z < START AT WAVE %d > C", startWave);
+        f.fillRect(160 - f.textWidth(buf) / 2 - 4, 125, f.textWidth(buf) + 8, 13, BLACK);
+        f.textCentered(160, 128, buf, startWave > 1 ? CYAN : CYAN_DIM);
         if (static_cast<int>(time * 2) % 2 == 0) f.textCentered(160, 142, "PRESS SPACE TO START", WHITE);
         std::snprintf(buf, sizeof buf, "HIGH SCORE %06d", highScore);
         f.textCentered(160, 156, buf, AMBER_DIM);
@@ -89,7 +92,13 @@ void Game::render(Frame& f) const {
         f.textCentered(160, 56, "GAME OVER", RED, 3);
         std::snprintf(buf, sizeof buf, "SCORE %06d", score);
         f.textCentered(160, 90, buf, WHITE);
-        if (score >= highScore && score > 0) f.textCentered(160, 104, "NEW HIGH SCORE", CYAN);
+        if (practice) {
+            std::snprintf(buf, sizeof buf, "PRACTICE FROM WAVE %d: NO HIGH SCORE", startWave);
+            f.fillRect(160 - f.textWidth(buf) / 2 - 4, 101, f.textWidth(buf) + 8, 13, BLACK);
+            f.textCentered(160, 104, buf, CYAN);
+        } else if (score >= highScore && score > 0) {
+            f.textCentered(160, 104, "NEW HIGH SCORE", CYAN);
+        }
     } else if (banner > 0) {
         std::snprintf(buf, sizeof buf, "WAVE %d", wave);
         f.textCentered(160, 34, buf, CYAN, 2);

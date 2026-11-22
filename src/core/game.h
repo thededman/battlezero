@@ -74,6 +74,11 @@ struct Game {
     float pvx = 0, pvz = 0;
     bool atEdge = false;
     int score = 0, lives = 3, wave = 0;
+    // Chosen on the title screen. A run that starts past wave 1 is practice: it does
+    // not set the high score.
+    static constexpr int MAX_START_WAVE = 13;
+    int startWave = 1;
+    bool practice = false;
     float waveDelay = 0, banner = 0, stateTime = 0, steer = 0;
 
     std::vector<Enemy> enemies;
@@ -90,7 +95,7 @@ private:
 
     struct Presses {
         bool fire = false, pause = false, recenter = false, tiltToggle = false, invert = false,
-             axis = false, mute = false;
+             axis = false, mute = false, left = false, right = false;
     } pressed;
     Input prev;
     float acc = 0;
