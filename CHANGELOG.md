@@ -6,6 +6,12 @@ All notable changes to BattleZero are recorded here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Tilt steering did nothing on the device unless you changed the axis on the
+  calibration screen. The game assumed the wrong sensor axis for left-right; it now
+  uses the right one from the start.
+
 ## [0.2.0] - 2026-11-22
 
 ### Added
