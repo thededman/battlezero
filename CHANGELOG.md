@@ -6,6 +6,8 @@ All notable changes to BattleZero are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-22
+
 ### Fixed
 
 - Tilt steering did nothing on the device unless you changed the axis on the
